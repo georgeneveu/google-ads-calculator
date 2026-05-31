@@ -28,7 +28,7 @@ All calculations update in real time as you adjust inputs.
 - Clean Google Ads-style interface
 
 ## 🌐 Live Demo
-[https://yourusername.github.io/google-ads-calculator/](https://georgeneveu.github.io/google-ads-calculator/)
+[https://georgeneveu.github.io/google-ads-calculator/](https://georgeneveu.github.io/google-ads-calculator/)
 
 ## 🛠 Tech Stack
 - HTML
