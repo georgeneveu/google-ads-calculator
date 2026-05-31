@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google Ads ROI Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Google Sans', Roboto, Arial, sans-serif;
+    background: #f8f9fa;
+    color: #202124;
+    min-height: 100vh;
+  }
+
+  .header {
+    background: #fff;
+    border-bottom: 1px solid #dadce0;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 64px;
+  }
+  .header-logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 32px; height: 32px; }
+  .header-title { font-size: 18px; font-weight: 500; color: #202124; }
+  .header-subtitle { font-size: 13px; color: #5f6368; margin-left: 4px; }
+
+  .scenario-bar {
+    background: #fff;
+    border-bottom: 1px solid #dadce0;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 52px;
+  }
+  .scenario-label { font-size: 13px; color: #5f6368; margin-right: 4px; }
+  .pill {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid #dadce0;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    background: #fff;
+    color: #5f6368;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .pill:hover { background: #f1f3f4; }
+  .pill.active { background: #e8f0fe; border-color: #1a73e8; color: #1a73e8; }
+
+  .main {
+    max-width: 1100px;
+    margin: 24px auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    padding: 24px;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #5f6368;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 20px;
+  }
+
+  .input-group { margin-bottom: 20px; }
+
+  .input-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3px;
+    gap: 8px;
+  }
+  .input-label span:first-child { font-size: 14px; color: #202124; font-weight: 500; }
+
+  .input-hint {
+    font-size: 12px;
+    color: #5f6368;
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  /* Slider + text input row */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .slider-row input[type="range"] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #dadce0;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  .slider-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #1a73e8;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .slider-row input[type="range"]::-moz-range-thumb {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #1a73e8;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+
+  /* Text input with prefix/suffix */
+  .text-input-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .text-input-wrap .prefix,
+  .text-input-wrap .suffix {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: #5f6368;
+    pointer-events: none;
+    line-height: 1;
+  }
+  .text-input-wrap .prefix { left: 8px; }
+  .text-input-wrap .suffix { right: 8px; }
+
+  .text-input-wrap input[type="number"] {
+    width: 88px;
+    height: 34px;
+    border: 1px solid #dadce0;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1a73e8;
+    background: #e8f0fe;
+    outline: none;
+    font-family: inherit;
+    text-align: right;
+    -moz-appearance: textfield;
+    appearance: textfield;
+    transition: border-color 0.15s;
+  }
+  .text-input-wrap input[type="number"]::-webkit-outer-spin-button,
+  .text-input-wrap input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .text-input-wrap input[type="number"]:focus { border-color: #1a73e8; outline: none; }
+
+  /* padding adjustments per symbol */
+  .has-prefix input[type="number"] { padding: 0 8px 0 18px; }
+  .has-suffix input[type="number"] { padding: 0 22px 0 8px; }
+
+  .range-bounds { display: flex; justify-content: space-between; margin-top: 4px; }
+  .range-bounds span { font-size: 11px; color: #9aa0a6; }
+
+  /* Results */
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .metric {
+    background: #f8f9fa;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .metric.highlight { background: #e6f4ea; border-color: #a8d5b5; }
+  .metric.highlight-warn { background: #fce8e6; border-color: #f5c6c2; }
+  .metric-label { font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .metric-value { font-size: 26px; font-weight: 400; color: #202124; line-height: 1.1; }
+  .metric-value.positive { color: #137333; }
+  .metric-value.negative { color: #c5221f; }
+  .metric-sub { font-size: 11px; color: #9aa0a6; margin-top: 3px; }
+
+  .roi-card { background: #fff; border: 1px solid #dadce0; border-radius: 8px; padding: 16px; }
+  .roi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .roi-label { font-size: 13px; color: #5f6368; }
+  .roi-pct { font-size: 20px; font-weight: 500; }
+  .roi-pct.pos { color: #137333; }
+  .roi-pct.neg { color: #c5221f; }
+  .bar-track { height: 8px; background: #f1f3f4; border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+  .bar-fill.pos { background: #137333; }
+  .bar-fill.neg { background: #c5221f; }
+
+  .breakdown { margin-top: 16px; }
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f3f4;
+    font-size: 13px;
+  }
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-row span:first-child { color: #5f6368; }
+  .breakdown-row span:last-child { font-weight: 500; color: #202124; }
+
+  .disclaimer {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #e8f0fe;
+    border: 1px solid #c5d8fc;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: #1967d2;
+    line-height: 1.5;
+  }
+  .disclaimer svg { flex-shrink: 0; margin-top: 1px; }
+
+  .advanced-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #1a73e8;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    font-family: inherit;
+    margin-top: 4px;
+  }
+  .advanced-toggle:hover { text-decoration: underline; }
+  .advanced-section { display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f1f3f4; }
+  .advanced-section.open { display: block; }
+
+  @media (max-width: 680px) {
+    .main { grid-template-columns: 1fr; padding: 0 12px; margin: 12px auto; }
+    .header { padding: 0 16px; }
+    .scenario-bar { padding: 0 16px; overflow-x: auto; }
+    .results-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .metric-value { font-size: 20px; }
+    .disclaimer { grid-column: 1; }
+    .header-subtitle { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">
+    <svg class="logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="4" fill="#fff"/>
+      <path d="M16 4C9.373 4 4 9.373 4 16s5.373 12 12 12 12-5.373 12-12S22.627 4 16 4z" fill="#f1f3f4"/>
+      <path d="M22.5 10.5L16 22l-3-5.5 3-3 3 2 3.5-5z" fill="#fbbc04"/>
+      <path d="M9.5 10.5L13 16.5l-3 5.5H7l2.5-4.5L7 13l2.5-2.5z" fill="#34a853"/>
+      <path d="M22.5 10.5H16l-3 5.5 3 3 6.5-8.5z" fill="#4285f4"/>
+      <path d="M9.5 10.5H16l-3 5.5-3-5.5z" fill="#ea4335"/>
+    </svg>
+    <span class="header-title">Google Ads ROI Calculator</span>
+    <span class="header-subtitle">- Estimate your campaign results</span>
+  </div>
+</div>
+
+<div class="scenario-bar">
+  <span class="scenario-label">Scenario:</span>
+  <button class="pill" id="pill-conservative" onclick="setScenario('conservative')">Conservative</button>
+  <button class="pill active" id="pill-realistic" onclick="setScenario('realistic')">Realistic</button>
+  <button class="pill" id="pill-aggressive" onclick="setScenario('aggressive')">Aggressive</button>
+</div>
+
+<div class="main">
+
+  <!-- INPUTS -->
+  <div class="card">
+    <div class="card-title">Campaign inputs</div>
+
+    <!-- Monthly budget -->
+    <div class="input-group">
+      <div class="input-label"><span>Monthly budget</span></div>
+      <p class="input-hint">How much you plan to spend on Google Ads each month. Start small to test, then scale what works.</p>
+      <div class="slider-row">
+        <input type="range" id="sl-budget" min="1" max="20000" step="1" value="1500" oninput="syncFromSlider('budget')">
+        <div class="text-input-wrap has-prefix">
+          <span class="prefix">$</span>
+          <input type="number" id="tx-budget" min="1" max="20000" step="1" value="1500" oninput="syncFromText('budget')">
+        </div>
+      </div>
+      <div class="range-bounds"><span>$1</span><span>$20,000</span></div>
+    </div>
+
+    <!-- CPC -->
+    <div class="input-group">
+      <div class="input-label"><span>Avg. cost per click (CPC)</span></div>
+      <p class="input-hint">What you pay each time someone clicks your ad. Varies by industry - legal and finance keywords cost more than general ones.</p>
+      <div class="slider-row">
+        <input type="range" id="sl-cpc" min="0.1" max="15" step="0.1" value="2.5" oninput="syncFromSlider('cpc')">
+        <div class="text-input-wrap has-prefix">
+          <span class="prefix">$</span>
+          <input type="number" id="tx-cpc" min="0.1" max="15" step="0.1" value="2.5" oninput="syncFromText('cpc')">
+        </div>
+      </div>
+      <div class="range-bounds"><span>$0.10</span><span>$15.00</span></div>
+    </div>
+
+    <!-- Conversion rate -->
+    <div class="input-group">
+      <div class="input-label"><span>Conversion rate</span></div>
+      <p class="input-hint">The percentage of visitors who take action on your site (fill a form, call, buy). A good landing page typically converts 2-5% of visitors.</p>
+      <div class="slider-row">
+        <input type="range" id="sl-cvr" min="0.1" max="15" step="0.1" value="3" oninput="syncFromSlider('cvr')">
+        <div class="text-input-wrap has-suffix">
+          <input type="number" id="tx-cvr" min="0.1" max="15" step="0.1" value="3" oninput="syncFromText('cvr')">
+          <span class="suffix">%</span>
+        </div>
+      </div>
+      <div class="range-bounds"><span>0.1%</span><span>15%</span></div>
+    </div>
+
+    <!-- AOV -->
+    <div class="input-group">
+      <div class="input-label"><span>Avg. order / service value (AOV)</span></div>
+      <p class="input-hint">How much revenue one customer brings in on average. For services, this is your typical invoice or package price.</p>
+      <div class="slider-row">
+        <input type="range" id="sl-aov" min="1" max="2000" step="1" value="159" oninput="syncFromSlider('aov')">
+        <div class="text-input-wrap has-prefix">
+          <span class="prefix">$</span>
+          <input type="number" id="tx-aov" min="1" max="2000" step="1" value="159" oninput="syncFromText('aov')">
+        </div>
+      </div>
+      <div class="range-bounds"><span>$1</span><span>$2,000</span></div>
+    </div>
+
+    <button class="advanced-toggle" onclick="toggleAdvanced()" id="adv-btn">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="#1a73e8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Show advanced options
+    </button>
+
+    <div class="advanced-section" id="adv-section">
+      <div class="input-group">
+        <div class="input-label"><span>Lead-to-customer rate</span></div>
+        <p class="input-hint">Not every lead becomes a paying customer. This is the percentage of leads you actually close. Service businesses typically close 10-30% of inquiries.</p>
+        <div class="slider-row">
+          <input type="range" id="sl-ltc" min="1" max="80" step="1" value="20" oninput="syncFromSlider('ltc')">
+          <div class="text-input-wrap has-suffix">
+            <input type="number" id="tx-ltc" min="1" max="80" step="1" value="20" oninput="syncFromText('ltc')">
+            <span class="suffix">%</span>
+          </div>
+        </div>
+        <div class="range-bounds"><span>1%</span><span>80%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Estimated monthly results</div>
+
+      <div class="results-grid">
+        <div class="metric">
+          <div class="metric-label">Clicks</div>
+          <div class="metric-value" id="r-clicks">600</div>
+          <div class="metric-sub">visitors to your site</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Leads / conversions</div>
+          <div class="metric-value" id="r-leads">18</div>
+          <div class="metric-sub">potential leads</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Est. customers</div>
+          <div class="metric-value" id="r-customers">4</div>
+          <div class="metric-sub">paying customers</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Est. revenue</div>
+          <div class="metric-value positive" id="r-revenue">$572</div>
+          <div class="metric-sub">based on AOV</div>
+        </div>
+        <div class="metric" id="cpa-metric" style="grid-column: 1 / -1;">
+          <div class="metric-label">Cost per acquisition (CPA)</div>
+          <div class="metric-value" id="r-cpa">$375</div>
+          <div class="metric-sub" id="r-cpa-sub">what you pay to acquire one customer</div>
+        </div>
+      </div>
+
+      <div class="roi-card">
+        <div class="roi-header">
+          <span class="roi-label">Return on ad spend (ROAS)</span>
+          <span class="roi-pct pos" id="r-roas-pct">38%</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill pos" id="r-bar" style="width:38%"></div>
+        </div>
+        <div class="breakdown">
+          <div class="breakdown-row">
+            <span>Ad spend</span>
+            <span id="r-spend">-$1,500</span>
+          </div>
+          <div class="breakdown-row">
+            <span>Est. revenue</span>
+            <span id="r-rev2">+$572</span>
+          </div>
+          <div class="breakdown-row">
+            <span>Est. profit / loss</span>
+            <span id="r-profit" style="color:#c5221f">-$928</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM8 5a.75.75 0 110 1.5A.75.75 0 018 5zm-.75 2.75a.75.75 0 011.5 0v3a.75.75 0 01-1.5 0v-3z" fill="#1967d2"/></svg>
+    Estimates are based on typical Google Ads performance benchmarks and may vary depending on your industry, campaign quality, landing page, and targeting. This calculator is designed to help you understand whether Google Ads can realistically generate leads for your business - not as a guarantee of results.
+  </div>
+
+</div>
+
+<script>
+  var advOpen = false;
+
+  /* Config: min, max, decimals for each field */
+  var cfg = {
+    budget: { min: 1,   max: 20000, dec: 0 },
+    cpc:    { min: 0.1, max: 15,    dec: 2 },
+    cvr:    { min: 0.1, max: 15,    dec: 1 },
+    aov:    { min: 1,   max: 2000,  dec: 0 },
+    ltc:    { min: 1,   max: 80,    dec: 0 }
+  };
+
+  function clamp(val, min, max) {
+    return Math.min(max, Math.max(min, val));
+  }
+
+  function syncFromSlider(field) {
+    var sl  = document.getElementById('sl-' + field);
+    var tx  = document.getElementById('tx-' + field);
+    var val = parseFloat(sl.value);
+    tx.value = val;
+    updateSliderFill(field);
+    calculate();
+  }
+
+  function syncFromText(field) {
+    var tx  = document.getElementById('tx-' + field);
+    var sl  = document.getElementById('sl-' + field);
+    var c   = cfg[field];
+    var raw = parseFloat(tx.value);
+    if (isNaN(raw)) return;
+    var val = clamp(raw, c.min, c.max);
+    sl.value = val;
+    updateSliderFill(field);
+    calculate();
+  }
+
+  function updateSliderFill(field) {
+    var sl  = document.getElementById('sl-' + field);
+    var c   = cfg[field];
+    var pct = ((parseFloat(sl.value) - c.min) / (c.max - c.min)) * 100;
+    sl.style.background = 'linear-gradient(to right, #1a73e8 ' + pct + '%, #dadce0 ' + pct + '%)';
+  }
+
+  function fmt(n) {
+    return '$' + Math.round(n).toLocaleString();
+  }
+
+  function getVal(field) {
+    return parseFloat(document.getElementById('sl-' + field).value);
+  }
+
+  function calculate() {
+    var budget = getVal('budget');
+    var cpc    = getVal('cpc');
+    var cvr    = getVal('cvr');
+    var aov    = getVal('aov');
+    var ltc    = getVal('ltc');
+
+    var clicks    = cpc > 0 ? Math.round(budget / cpc) : 0;
+    var leads     = Math.round(clicks * cvr / 100);
+    var customers = Math.round(leads * ltc / 100);
+    var revenue   = customers * aov;
+    var profit    = revenue - budget;
+    var roas      = budget > 0 ? (revenue / budget) * 100 : 0;
+    var cpa       = customers > 0 ? budget / customers : 0;
+
+    document.getElementById('r-clicks').textContent    = clicks.toLocaleString();
+    document.getElementById('r-leads').textContent     = leads.toLocaleString();
+    document.getElementById('r-customers').textContent = customers.toLocaleString();
+    document.getElementById('r-revenue').textContent   = fmt(revenue);
+    document.getElementById('r-revenue').className     = 'metric-value ' + (revenue > 0 ? 'positive' : '');
+
+    var cpaEl     = document.getElementById('r-cpa');
+    var cpaMetric = document.getElementById('cpa-metric');
+    var cpaSubEl  = document.getElementById('r-cpa-sub');
+    if (customers > 0) {
+      cpaEl.textContent = fmt(cpa);
+      var good = cpa < aov;
+      cpaEl.className   = 'metric-value ' + (good ? 'positive' : 'negative');
+      cpaMetric.className = 'metric ' + (good ? 'highlight' : 'highlight-warn');
+      cpaSubEl.textContent = good
+        ? 'you pay less than you earn per customer - profitable'
+        : 'you pay more than you earn per customer - adjust your campaign';
+    } else {
+      cpaEl.textContent   = 'N/A';
+      cpaEl.className     = 'metric-value';
+      cpaMetric.className = 'metric';
+      cpaSubEl.textContent = 'not enough customers to calculate';
+    }
+
+    document.getElementById('r-spend').textContent = '-' + fmt(budget);
+    document.getElementById('r-rev2').textContent  = '+' + fmt(revenue);
+
+    var profitEl = document.getElementById('r-profit');
+    profitEl.textContent = (profit >= 0 ? '+' : '-') + fmt(Math.abs(profit));
+    profitEl.style.color = profit >= 0 ? '#137333' : '#c5221f';
+
+    var roasPct = Math.round(roas);
+    var roasEl  = document.getElementById('r-roas-pct');
+    roasEl.textContent = roasPct + '%';
+    roasEl.className   = 'roi-pct ' + (profit >= 0 ? 'pos' : 'neg');
+
+    var barPct = Math.min(100, Math.max(2, roasPct));
+    var barEl  = document.getElementById('r-bar');
+    barEl.style.width = barPct + '%';
+    barEl.className   = 'bar-fill ' + (profit >= 0 ? 'pos' : 'neg');
+  }
+
+  function toggleAdvanced() {
+    advOpen = !advOpen;
+    document.getElementById('adv-section').classList.toggle('open', advOpen);
+    var btn = document.getElementById('adv-btn');
+    btn.innerHTML = advOpen
+      ? '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 10l4-4 4 4" stroke="#1a73e8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Hide advanced options'
+      : '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="#1a73e8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Show advanced options';
+  }
+
+  var scenarios = {
+    conservative: { cpc: 4.0, cvr: 1.5, ltc: 10 },
+    realistic:    { cpc: 2.5, cvr: 3.0, ltc: 20 },
+    aggressive:   { cpc: 1.5, cvr: 6.0, ltc: 35 }
+  };
+
+  function setScenario(s) {
+    ['conservative','realistic','aggressive'].forEach(function(p) {
+      document.getElementById('pill-' + p).classList.toggle('active', p === s);
+    });
+    ['cpc','cvr','ltc'].forEach(function(f) {
+      document.getElementById('sl-' + f).value = scenarios[s][f];
+      document.getElementById('tx-' + f).value = scenarios[s][f];
+      updateSliderFill(f);
+    });
+    calculate();
+  }
+
+  /* Init */
+  ['budget','cpc','cvr','aov','ltc'].forEach(updateSliderFill);
+  calculate();
+</script>
+</body>
+</html>
